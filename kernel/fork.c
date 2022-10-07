@@ -2233,14 +2233,30 @@ long _do_fork(unsigned long clone_flags,
 	struct task_struct *p;
 	int trace = 0;
 	long nr;
-
+	
+    extern int kp_active_mode(void); 
 	/* Boost DDR bus to the max for 50 ms when userspace launches an app */
 	if (task_is_zygote(current) && df_boost_within_input(1500)) {
+		/*
 		devfreq_boost_kick_max(DEVFREQ_MSM_LLCCBW, 50);
 		devfreq_boost_kick_max(DEVFREQ_MSM_CPUBW, 50);
-	}
+	*/
+		   /*
 
-	/*
+    * Dont boost CPU & DDR if battery saver profile is enabled
+    * and boost CPU & DDR for 25ms if balanced profile is enabled
+    */
+       if (kp_active_mode() == 3 || kp_active_mode() == 0) {
+           devfreq_boost_kick_max(DEVFREQ_MSM_LLCCBW, 50);
+           devfreq_boost_kick_max(DEVFREQ_MSM_CPUBW, 50);
+       } else if (kp_active_mode() == 2) {
+           devfreq_boost_kick_max(DEVFREQ_MSM_LLCCBW, 25);
+           devfreq_boost_kick_max(DEVFREQ_MSM_CPUBW, 25);
+       } else {
+           pr_info("Battery Profile Active, Skipping Boost...\n");
+       }
+	}
+		/*
 	 * Determine whether and which event to report to ptracer.  When
 	 * called from kernel_thread or CLONE_UNTRACED is explicitly
 	 * requested, no event is reported; otherwise, report if the event
