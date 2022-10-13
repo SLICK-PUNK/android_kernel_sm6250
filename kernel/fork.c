@@ -2233,8 +2233,8 @@ long _do_fork(unsigned long clone_flags,
 	struct task_struct *p;
 	int trace = 0;
 	long nr;
-	
-    extern int kp_active_mode(void); 
+
+    extern int kp_active_mode(void);
 	/* Boost DDR bus to the max for 50 ms when userspace launches an app */
 	if (task_is_zygote(current) && df_boost_within_input(1500)) {
 		/*
