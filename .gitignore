@@ -137,4 +137,4 @@ Android.bp
 out
 AnyKernel3/*
 bck/*
-
+log.txt
