@@ -1,1 +1,74 @@
-/home/sai0-0/kernel/redvelvet
+#!/bin/env bash
+export KDIR=$(pwd)
+export KBUILD_COMPILER_STRING=$($HOME/kernel/toolchains/neutron-clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+export KBUILD_BUILD_HOST="Cookie"
+export KBUILD_BUILD_USER="Sairam"
+export KBUILD_BUILD_VERSION="1"
+export PROCS=$(nproc --all)
+export DISTRO=$(source /etc/os-release && echo "${NAME}")
+export PATH=$HOME/toolchains/neutron-clang/bin:$PATH
+export LINKER=ld.lld
+
+build() {
+    echo "Building $KDIR"
+    make O=out ARCH=arm64 cust_defconfig
+    make O=out ARCH=arm64 menuconfig
+    cp out/.config arch/arm64/configs/cust_defconfig
+    make -j${PROCS} O=out \
+                     ARCH=arm64 \
+                     SUBARCH=arm64 \
+                     CC=clang \
+                     CROSS_COMPILE=aarch64-linux-gnu- \
+                     CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+                     CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+                     AR=llvm-ar \
+                     NM=llvm-nm \
+                     OBJCOPY=llvm-objcopy \
+                     OBJDUMP=llvm-objdump \
+                     STRIP=llvm-strip \
+                     LD=ld.lld
+}
+
+conf() {
+
+	make ARCH=arm64 O=out cust_defconfig
+	make ARCH=arm64 O=out menuconfig
+	cp -rf out/.config arch/arm64/configs/cust_defconfig
+
+zip() {
+    echo "Zipping"
+    rsync -av --exclude=".*" $HOME/kernel/AnyKernel3 .
+    cd AnyKernel3
+    rm *.zip
+    cp $KDIR/out/arch/arm64/boot/Image.gz-dtb $KDIR/out/arch/arm64/boot/dtbo.img ./
+    bash -c "zip -r9 redvelvet.zip * -x .git README.md *placeholder"
+    ls -alh --color=auto
+}
+
+bck() {
+     mkdir -p bck
+     cp arch/arm64/configs/cust_defconfig bck/cust_defconfig
+}
+#i=1;
+#for cmd in "$@"
+#do
+#    echo "$i:$cmd";
+#    $cmd
+#    i=$((i + 1));
+#done
+if test $# = 0
+then
+	build
+	zip
+else
+	i=1;
+	for cmd in "$@"
+	do
+    	   echo "$i:$cmd";
+    	   $cmd
+    	   i=$((i + 1));
+	done
+
+fi
+#build
+#zip
